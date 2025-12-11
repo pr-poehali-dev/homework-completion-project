@@ -7,7 +7,18 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Icon from '@/components/ui/icon';
+
+interface Review {
+  id: number;
+  author: string;
+  rating: number;
+  comment: string;
+  date: string;
+}
 
 interface Assignment {
   id: number;
@@ -17,6 +28,9 @@ interface Assignment {
   pages: number;
   format: string;
   isFavorite: boolean;
+  rating: number;
+  reviewCount: number;
+  reviews: Review[];
 }
 
 const Index = () => {
@@ -25,17 +39,31 @@ const Index = () => {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
+  const [isReviewDialogOpen, setIsReviewDialogOpen] = useState(false);
+  const [newReview, setNewReview] = useState({ rating: 5, comment: '' });
   
   const [assignments, setAssignments] = useState<Assignment[]>([
-    { id: 1, title: 'Решение квадратных уравнений', subject: 'Математика', grade: '8 класс', pages: 12, format: 'PDF', isFavorite: false },
-    { id: 2, title: 'Анализ произведения "Евгений Онегин"', subject: 'Литература', grade: '9 класс', pages: 8, format: 'PDF', isFavorite: false },
-    { id: 3, title: 'Законы Ньютона - практические задачи', subject: 'Физика', grade: '10 класс', pages: 15, format: 'PDF', isFavorite: false },
-    { id: 4, title: 'Органическая химия: углеводороды', subject: 'Химия', grade: '10 класс', pages: 10, format: 'PDF', isFavorite: false },
-    { id: 5, title: 'История Древней Руси', subject: 'История', grade: '6 класс', pages: 18, format: 'PDF', isFavorite: false },
-    { id: 6, title: 'Present Perfect: упражнения и правила', subject: 'Английский', grade: '7 класс', pages: 7, format: 'PDF', isFavorite: true },
-    { id: 7, title: 'Тригонометрические уравнения', subject: 'Математика', grade: '10 класс', pages: 14, format: 'PDF', isFavorite: false },
-    { id: 8, title: 'Электромагнитная индукция', subject: 'Физика', grade: '11 класс', pages: 11, format: 'PDF', isFavorite: false },
-    { id: 9, title: 'Реакции окисления-восстановления', subject: 'Химия', grade: '9 класс', pages: 9, format: 'PDF', isFavorite: false },
+    { id: 1, title: 'Решение квадратных уравнений', subject: 'Математика', grade: '8 класс', pages: 12, format: 'PDF', isFavorite: false, rating: 4.8, reviewCount: 24, reviews: [
+      { id: 1, author: 'Анна М.', rating: 5, comment: 'Отличное объяснение! Все понятно и структурировано.', date: '2024-12-08' },
+      { id: 2, author: 'Иван К.', rating: 5, comment: 'Помогло разобраться с темой. Рекомендую!', date: '2024-12-07' },
+      { id: 3, author: 'Мария П.', rating: 4, comment: 'Хорошо, но хотелось бы больше примеров.', date: '2024-12-06' },
+    ]},
+    { id: 2, title: 'Анализ произведения "Евгений Онегин"', subject: 'Литература', grade: '9 класс', pages: 8, format: 'PDF', isFavorite: false, rating: 4.6, reviewCount: 18, reviews: [
+      { id: 1, author: 'Ольга С.', rating: 5, comment: 'Глубокий анализ, все аспекты раскрыты.', date: '2024-12-09' },
+    ]},
+    { id: 3, title: 'Законы Ньютона - практические задачи', subject: 'Физика', grade: '10 класс', pages: 15, format: 'PDF', isFavorite: false, rating: 4.9, reviewCount: 31, reviews: [
+      { id: 1, author: 'Дмитрий В.', rating: 5, comment: 'Лучший материал по теме!', date: '2024-12-10' },
+      { id: 2, author: 'Елена Т.', rating: 5, comment: 'Подробные решения с пояснениями.', date: '2024-12-09' },
+    ]},
+    { id: 4, title: 'Органическая химия: углеводороды', subject: 'Химия', grade: '10 класс', pages: 10, format: 'PDF', isFavorite: false, rating: 4.5, reviewCount: 15, reviews: [] },
+    { id: 5, title: 'История Древней Руси', subject: 'История', grade: '6 класс', pages: 18, format: 'PDF', isFavorite: false, rating: 4.7, reviewCount: 22, reviews: [] },
+    { id: 6, title: 'Present Perfect: упражнения и правила', subject: 'Английский', grade: '7 класс', pages: 7, format: 'PDF', isFavorite: true, rating: 4.9, reviewCount: 35, reviews: [
+      { id: 1, author: 'Александр Н.', rating: 5, comment: 'Наконец-то понял это время! Спасибо!', date: '2024-12-11' },
+    ]},
+    { id: 7, title: 'Тригонометрические уравнения', subject: 'Математика', grade: '10 класс', pages: 14, format: 'PDF', isFavorite: false, rating: 4.4, reviewCount: 12, reviews: [] },
+    { id: 8, title: 'Электромагнитная индукция', subject: 'Физика', grade: '11 класс', pages: 11, format: 'PDF', isFavorite: false, rating: 4.8, reviewCount: 19, reviews: [] },
+    { id: 9, title: 'Реакции окисления-восстановления', subject: 'Химия', grade: '9 класс', pages: 9, format: 'PDF', isFavorite: false, rating: 4.6, reviewCount: 14, reviews: [] },
   ]);
 
   const subjects = ['Математика', 'Физика', 'Химия', 'Литература', 'История', 'Английский'];
@@ -68,6 +96,60 @@ const Index = () => {
   const clearFilters = () => {
     setSelectedSubjects([]);
     setSelectedGrades([]);
+  };
+
+  const openReviewDialog = (assignment: Assignment) => {
+    setSelectedAssignment(assignment);
+    setIsReviewDialogOpen(true);
+  };
+
+  const submitReview = () => {
+    if (!selectedAssignment) return;
+    
+    const review: Review = {
+      id: Date.now(),
+      author: 'Вы',
+      rating: newReview.rating,
+      comment: newReview.comment,
+      date: new Date().toISOString().split('T')[0],
+    };
+
+    setAssignments(prev =>
+      prev.map(item =>
+        item.id === selectedAssignment.id
+          ? {
+              ...item,
+              reviews: [review, ...item.reviews],
+              reviewCount: item.reviewCount + 1,
+              rating: ((item.rating * item.reviewCount + newReview.rating) / (item.reviewCount + 1)),
+            }
+          : item
+      )
+    );
+
+    setIsReviewDialogOpen(false);
+    setNewReview({ rating: 5, comment: '' });
+  };
+
+  const renderStars = (rating: number, size: number = 16, interactive: boolean = false, onRate?: (rating: number) => void) => {
+    return (
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <button
+            key={star}
+            onClick={() => interactive && onRate && onRate(star)}
+            disabled={!interactive}
+            className={interactive ? 'cursor-pointer hover:scale-110 transition-transform' : ''}
+          >
+            <Icon
+              name="Star"
+              size={size}
+              className={star <= rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}
+            />
+          </button>
+        ))}
+      </div>
+    );
   };
 
   const filteredAssignments = assignments.filter(item => {
@@ -294,7 +376,7 @@ const Index = () => {
                           </CardDescription>
                         </CardHeader>
                         <CardContent>
-                          <div className="flex items-center justify-between text-sm text-muted-foreground mb-4">
+                          <div className="flex items-center justify-between text-sm text-muted-foreground mb-3">
                             <span className="flex items-center gap-1">
                               <Icon name="FileText" size={16} />
                               {assignment.pages} стр.
@@ -304,6 +386,24 @@ const Index = () => {
                               {assignment.format}
                             </span>
                           </div>
+                          
+                          {/* Rating Section */}
+                          <div className="flex items-center justify-between mb-4 pb-3 border-b">
+                            <div className="flex items-center gap-2">
+                              {renderStars(assignment.rating, 14)}
+                              <span className="text-sm font-semibold text-foreground">
+                                {assignment.rating.toFixed(1)}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => openReviewDialog(assignment)}
+                              className="text-xs text-accent hover:underline flex items-center gap-1"
+                            >
+                              <Icon name="MessageSquare" size={14} />
+                              {assignment.reviewCount}
+                            </button>
+                          </div>
+
                           <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
                             <Icon name="Download" size={16} className="mr-2" />
                             Скачать решение
@@ -370,6 +470,118 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      {/* Review Dialog */}
+      <Dialog open={isReviewDialogOpen} onOpenChange={setIsReviewDialogOpen}>
+        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">
+              {selectedAssignment?.title}
+            </DialogTitle>
+            <DialogDescription className="flex items-center gap-3">
+              <Badge variant="outline">{selectedAssignment?.subject}</Badge>
+              <span className="text-xs">{selectedAssignment?.grade}</span>
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Overall Rating */}
+          <div className="bg-secondary p-4 rounded-lg flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                {renderStars(selectedAssignment?.rating || 0, 20)}
+                <span className="text-2xl font-bold text-foreground">
+                  {selectedAssignment?.rating.toFixed(1)}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {selectedAssignment?.reviewCount} отзывов
+              </p>
+            </div>
+            <Button
+              onClick={() => {
+                const reviewForm = document.getElementById('review-form');
+                reviewForm?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              size="sm"
+              variant="outline"
+            >
+              <Icon name="Plus" size={16} className="mr-2" />
+              Оставить отзыв
+            </Button>
+          </div>
+
+          {/* Existing Reviews */}
+          <div className="space-y-4 mt-4">
+            <h3 className="font-semibold text-sm flex items-center gap-2">
+              <Icon name="MessageSquare" size={16} />
+              Отзывы студентов
+            </h3>
+            
+            {selectedAssignment && selectedAssignment.reviews.length > 0 ? (
+              <div className="space-y-3">
+                {selectedAssignment.reviews.map((review) => (
+                  <div key={review.id} className="border rounded-lg p-4 bg-card">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback className="bg-accent text-accent-foreground text-xs">
+                            {review.author.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">{review.author}</p>
+                          <p className="text-xs text-muted-foreground">{review.date}</p>
+                        </div>
+                      </div>
+                      {renderStars(review.rating, 14)}
+                    </div>
+                    <p className="text-sm text-foreground">{review.comment}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Пока нет отзывов. Будьте первым!
+              </p>
+            )}
+          </div>
+
+          {/* Add Review Form */}
+          <div id="review-form" className="border-t pt-4 mt-4">
+            <h3 className="font-semibold text-sm mb-3">Ваш отзыв</h3>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-xs mb-2 block">Оценка</Label>
+                <div className="flex items-center gap-2">
+                  {renderStars(newReview.rating, 24, true, (rating) => 
+                    setNewReview(prev => ({ ...prev, rating }))
+                  )}
+                  <span className="text-sm font-medium ml-2">{newReview.rating}.0</span>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="comment" className="text-xs mb-2 block">Комментарий</Label>
+                <Textarea
+                  id="comment"
+                  placeholder="Поделитесь своим мнением о решении..."
+                  value={newReview.comment}
+                  onChange={(e) => setNewReview(prev => ({ ...prev, comment: e.target.value }))}
+                  rows={4}
+                  className="resize-none"
+                />
+              </div>
+              <Button
+                onClick={submitReview}
+                disabled={!newReview.comment.trim()}
+                className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+              >
+                <Icon name="Send" size={16} className="mr-2" />
+                Отправить отзыв
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
